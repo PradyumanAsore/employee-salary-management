@@ -429,7 +429,7 @@ export function EmployeeDetailPage() {
                 <Text fw={600}>Compensation</Text>
               </Group>
               <Stack gap="sm">
-                <Paper bg="gray.0" p="md" radius="md">
+                <Paper bg="var(--mantine-color-default)" p="md" radius="md" withBorder>
                   <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
                     Annual Salary
                   </Text>
