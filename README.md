@@ -62,6 +62,10 @@ SalaryHub replaces static Excel-based salary tracking with a structured web-base
 ### 1. Backend Setup
 
 ```bash
+# Clone the repository
+git clone https://github.com/PradyumanAsore/employee-salary-management.git
+cd employee-salary-management
+
 From the repository root:
 
 # Create and activate virtual environment
