@@ -41,17 +41,33 @@ async function request<T>(
     ...options,
   });
 
-  if (response.status === 204) {
+    if (response.status === 204) {
     return undefined as T;
   }
 
-  const data = await response.json();
+  let data: Record<string, unknown>;
+
+  try {
+    const parsed: unknown = await response.json();
+
+    data =
+      parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : { detail: "The server returned an unexpected response." };
+  } catch {
+    data = {
+      detail: response.ok
+        ? "The server returned an invalid response."
+        : "The server returned an unexpected error response.",
+    };
+  }
 
   if (!response.ok) {
     throw new ApiError(response.status, data);
   }
 
   return data as T;
+
 }
 
 // === Employee CRUD ===
