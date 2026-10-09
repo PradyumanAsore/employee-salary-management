@@ -28,6 +28,7 @@ class ApiError extends Error {
   }
 }
 
+
 async function request<T>(
   path: string,
   options: RequestInit = {}
@@ -41,34 +42,39 @@ async function request<T>(
     ...options,
   });
 
-    if (response.status === 204) {
+  if (response.status === 204) {
     return undefined as T;
   }
 
-  let data: Record<string, unknown>;
+  let data: unknown;
 
   try {
-    const parsed: unknown = await response.json();
-
-    data =
-      parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
-        ? (parsed as Record<string, unknown>)
-        : { detail: "The server returned an unexpected response." };
+    data = await response.json();
   } catch {
-    data = {
+    throw new ApiError(response.status, {
       detail: response.ok
         ? "The server returned an invalid response."
         : "The server returned an unexpected error response.",
-    };
+    });
   }
 
   if (!response.ok) {
-    throw new ApiError(response.status, data);
+    const errorData =
+      data !== null &&
+      typeof data === "object" &&
+      !Array.isArray(data)
+        ? (data as Record<string, unknown>)
+        : {
+            detail: "The server returned an unexpected error response.",
+          };
+
+    throw new ApiError(response.status, errorData);
   }
 
+  // Preserve valid JSON arrays and objects returned by the backend.
   return data as T;
-
 }
+
 
 // === Employee CRUD ===
 
