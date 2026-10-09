@@ -7,12 +7,16 @@ never mix currencies in aggregations.
 
 from datetime import date
 from decimal import Decimal
+from urllib import response
 
 import pytest
 from rest_framework.test import APIClient
 
 from employees.models import Employee
 from employees import services
+
+from django.test.utils import CaptureQueriesContext
+from django.db import connection
 
 
 @pytest.fixture
@@ -93,10 +97,17 @@ class TestAnalyticsSummary:
         assert response.data["total_employees"] == 4
 
     def test_summary_groups_by_currency(self, api_client, analytics_employees):
-        """Summary breaks down stats by currency, not mixing them."""
+        """Summary breaks down stats by currency without duplicates."""
         response = api_client.get("/api/analytics/summary/")
-        currencies = {c["currency"] for c in response.data["by_currency"]}
-        assert currencies == {"USD", "INR"}
+
+        assert response.status_code == 200
+
+        currencies = [
+            item["currency"] for item in response.data["by_currency"]
+        ]
+
+        assert set(currencies) == {"USD", "INR"}
+        assert len(currencies) == len(set(currencies))
 
     def test_summary_usd_stats(self, api_client, analytics_employees):
         """USD stats are correct (3 employees: 100K, 150K, 80K)."""
@@ -123,6 +134,17 @@ class TestAnalyticsSummary:
         assert response.status_code == 200
         assert response.data["total_employees"] == 0
         assert response.data["by_currency"] == []
+
+    def test_salary_summary_query_count(self, api_client, analytics_employees):
+        with CaptureQueriesContext(connection) as queries:
+            response = api_client.get("/api/analytics/summary/")
+
+        assert response.status_code == 200
+        print(f"Salary summary query count: {len(queries)}")
+
+
+
+
 
 
 @pytest.mark.django_db

@@ -11,6 +11,8 @@ from django.db.models import Avg, Count, Max, Min, Q
 
 from .models import Employee
 
+from collections import defaultdict
+
 
 def get_salary_summary():
     """
@@ -34,15 +36,18 @@ def get_salary_summary():
     )
 
     # Compute median per currency (not available as a DB aggregate in SQLite)
+    salaries_by_currency = defaultdict(list)
+
+    for currency_code, salary in (
+        Employee.objects.order_by("currency", "salary")
+        .values_list("currency", "salary")
+    ):
+        salaries_by_currency[currency_code].append(salary)
+
     currency_stats = []
     for entry in by_currency:
         currency = entry["currency"]
-        salaries = list(
-            Employee.objects.filter(currency=currency)
-            .order_by("salary")
-            .values_list("salary", flat=True)
-        )
-        median = _compute_median(salaries)
+        median = _compute_median(salaries_by_currency[currency])
 
         currency_stats.append(
             {
@@ -60,7 +65,6 @@ def get_salary_summary():
         "by_currency": currency_stats,
     }
 
-
 def get_stats_by_department():
     """
     Salary statistics per department, grouped by currency.
@@ -77,7 +81,6 @@ def get_stats_by_department():
         )
         .order_by("department", "currency")
     )
-
 
 def get_stats_by_country():
     """
